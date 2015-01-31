@@ -199,6 +199,42 @@ namespace TableDataGenerator
         }
 
 
+        // ------====== Base Melee Attack Power ======------
+        // The function works out the base melee attack power
+        //
+        // I'm not sure of the accuracy of this one, even though it is taken straight from the creature_tamplate table
+        private int getBaseMeleeAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
+        {
+            // Generate base  melee attack power
+            MySqlDataReader reader;
+            string sqlScript = "";
+            MySqlCommand cmd;
+
+            // base  melee attack power     
+            int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
+
+            // Generate base damage
+
+            sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel AND MinLevelHealth = MaxLevelHealth LIMIT 1 ";
+
+            cmd = new MySqlCommand(sqlScript, conn);
+
+            reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
+
+                iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
+                txtResults.Text += " Base Melee AP: " + iBaseMeleeAttackPower;
+            }
+
+            reader.Close();
+
+            return iBaseMeleeAttackPower;
+        }
+
+
         // ------====== BASE RANGED ATTACK POWER ======------
         // The method works out the base ranged attack power
         private int getBaseRangedAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel, int iDamageMultiplier, double dDamageVariance, double dBaseDamage)
@@ -285,41 +321,6 @@ namespace TableDataGenerator
             return iBaseRangedAttackPower;
         }
 
-        // ------====== Base Melee Attack Power ======------
-        // The function works out the base melee attack power
-        //
-        // I'm not sure of the accuracy of this one, even though it is taken straight from the creature_tamplate table
-        private int getBaseMeleeAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
-        {
-            // Generate base  melee attack power
-            MySqlDataReader reader;
-            string sqlScript = "";
-            MySqlCommand cmd;
-
-            // base  melee attack power     
-            int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
-
-            // Generate base damage
-
-            sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel AND MinLevelHealth = MaxLevelHealth LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
-
-                iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
-                txtResults.Text += " Base Melee AP: " + iBaseMeleeAttackPower;
-            }
-
-            reader.Close();
-
-            return iBaseMeleeAttackPower;
-        }
-
 
 
         private void btnGenerateScript_Click(object sender, EventArgs e)
@@ -349,9 +350,6 @@ namespace TableDataGenerator
 
             // base mana
             int iBaseMana = 0;
-            int iMinMana = 0;
-            int iMaxMana = 0;
-            double dManaMultiplier = 0;
 
             double dBaseDamage = 0;
             int iDamageMultiplier = 0; // DamageMultiplyer in creature_tempplate table
@@ -360,10 +358,6 @@ namespace TableDataGenerator
             int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
 
             int iBaseRangedAttackPower = 0;
-            int iBaseRangedAttackTime = 0; // MeleeBaseAttackTime in creature_tempplate table
-            int iMinRangedDamage = 0;
-            int iMaxRangedDamage = 0;
-
 
             int iBaseArmour = 0; // ?????????????????? no info on how to obtain this!
 
