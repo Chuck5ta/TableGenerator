@@ -55,38 +55,38 @@ namespace TableDataGenerator
 
         // ------====== Base Health ======------
         // The function works out the base health
-        private int getBaseHealth(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
+        private int getBaseHealth(UInt32 iClass, int iCreatureLevel, string myConnectionString)
         {
             // Generate base health
-            MySqlDataReader reader;
             string sqlScript = "";
-            MySqlCommand cmd;
 
             // base health
             int iBaseHealth = 0;
             int iMinHealth = 0;
+            int iMaxHealth = 0;
+            double dAverageHealth = 0;
             double dHealthMultiplier = 0;
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connect = new MySqlConnection(myConnectionString))
+            using (MySqlCommand cmd = new MySqlCommand(sqlScript, connect))
             {
-                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
+                connect.Open();
+                using (MySqlDataReader MySQLReader = cmd.ExecuteReader())
+                {
+                    while (MySQLReader.Read())
+                    {
+                        txtResults.Text += "" + iCreatureLevel + " " + MySQLReader.GetString("Entry") + " \r\n";
 
-                iMinHealth = reader.GetInt32("MinLevelHealth");
-                txtResults.Text += "" + iMinHealth;
-                dHealthMultiplier = reader.GetDouble("HealthMultiplier");
-                txtResults.Text += " " + dHealthMultiplier;
+                        iMinHealth = MySQLReader.GetInt32("MinLevelHealth");
+                        iMaxHealth = MySQLReader.GetInt32("MinLevelHealth");
+                        dAverageHealth = (iMinHealth + iMaxHealth) / 2;
+                        dHealthMultiplier = MySQLReader.GetDouble("HealthMultiplier");
 
-                iBaseHealth = Convert.ToInt32(iMinHealth / dHealthMultiplier);
-
-            }
-
-            reader.Close();
+                        iBaseHealth = Convert.ToInt32(iMinHealth / dHealthMultiplier);
+                    }
+                }
+            } // Here the connection will be closed and disposed.  (and the command also)
 
             return iBaseHealth;
         }
@@ -94,12 +94,10 @@ namespace TableDataGenerator
 
         // ------====== Base Mana ======------
         // The function works out the base mana
-        private int getBaseMana(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
+        private int getBaseMana(UInt32 iClass, int iCreatureLevel, string myConnectionString)
         {
             // Generate base health
-            MySqlDataReader reader;
             string sqlScript = "";
-            MySqlCommand cmd;
 
             // base health
             int iBaseMana = 0;
@@ -107,21 +105,21 @@ namespace TableDataGenerator
             double dManaMultiplier = 0;
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connect = new MySqlConnection(myConnectionString))
+            using (MySqlCommand cmd = new MySqlCommand(sqlScript, connect))
             {
-                iMinMana = reader.GetInt32("MinLevelMana");
-                dManaMultiplier = reader.GetDouble("ManaMultiplier");
+                connect.Open();
+                using (MySqlDataReader MySQLReader = cmd.ExecuteReader())
+                {
+                    while (MySQLReader.Read())
+                    {
+                        iMinMana = MySQLReader.GetInt32("MinLevelMana");
+                        dManaMultiplier = MySQLReader.GetDouble("ManaMultiplier");
 
-                iBaseMana = Convert.ToInt32(iMinMana / dManaMultiplier);
-
-            }
-
-            reader.Close();
+                        iBaseMana = Convert.ToInt32(iMinMana / dManaMultiplier);
+                    }
+                }
+            } // Here the connection will be closed and disposed.  (and the command also)
 
             return iBaseMana;
         }
@@ -129,11 +127,9 @@ namespace TableDataGenerator
 
         // ------====== BASE DAMAGE ======------
         // The method works out the base damage
-        private double getBaseDamage(MySqlConnection conn, UInt32 iClass, int iCreatureLevel, int iBaseMeleeAttackPower)
+        private double getBaseDamage(UInt32 iClass, int iCreatureLevel, int iBaseMeleeAttackPower, string myConnectionString)
         {
-            MySqlDataReader reader;
             string sqlScript = "";
-            MySqlCommand cmd;
 
             double dBaseDamage = 0; // this is what we need to worl out
             int iBaseMeleeAttackTime = 0; // MeleeBaseAttackTime in creature_tempplate table
@@ -143,60 +139,60 @@ namespace TableDataGenerator
             double dDamageVariance = 0;
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connect = new MySqlConnection(myConnectionString))
+            using (MySqlCommand cmd = new MySqlCommand(sqlScript, connect))
             {
-                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
+                connect.Open();
+                using (MySqlDataReader MySQLReader = cmd.ExecuteReader())
+                {
+                    while (MySQLReader.Read())
+                    {
+                        iDamageMultiplier = MySQLReader.GetInt32("DamageMultiplier");
 
-                iDamageMultiplier = reader.GetInt32("DamageMultiplier");
+                        dDamageVariance = MySQLReader.GetDouble("DamageVariance");
 
-                dDamageVariance = reader.GetDouble("DamageVariance");
+                        iBaseMeleeAttackPower = MySQLReader.GetInt32("MeleeAttackPower");
 
-                iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
+                        iBaseMeleeAttackTime = MySQLReader.GetInt32("MeleeBaseAttackTime");
 
-                iBaseMeleeAttackTime = reader.GetInt32("MeleeBaseAttackTime");
-
-                iMinMeleeDamage = reader.GetInt32("MinMeleeDmg");
-                iMaxMeleeDamage = reader.GetInt32("MaxMeleeDmg");
+                        iMinMeleeDamage = MySQLReader.GetInt32("MinMeleeDmg");
+                        iMaxMeleeDamage = MySQLReader.GetInt32("MaxMeleeDmg");
 
 
-                // REVERSE THE CALCULATION in order to acquire the base damage
-                // CalculatedMinMeleeDmg=ROUND(((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) * Damage Multiplier
+                        // REVERSE THE CALCULATION in order to acquire the base damage
+                        // CalculatedMinMeleeDmg=ROUND(((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) * Damage Multiplier
 
 
-                // (Base Damage * Damage Variance)
-                double dBaseDamage_x_DamageVariance = 0;
-                // (Base Attack Time/1000)
-                double dBaseAttackTime_DIV_1000 = 0;
-                // (Base Melee Attackpower / 14)
-                double iBaseMeleeAttackPower_DIV_14 = 0;
-                // ((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) / (Base Attack Time/1000)
-                double dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = 0;
-                // (((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000))
-                double dTotalOfBracketedCalculations = 0;
+                        // (Base Damage * Damage Variance)
+                        double dBaseDamage_x_DamageVariance = 0;
+                        // (Base Attack Time/1000)
+                        double dBaseAttackTime_DIV_1000 = 0;
+                        // (Base Melee Attackpower / 14)
+                        double iBaseMeleeAttackPower_DIV_14 = 0;
+                        // ((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) / (Base Attack Time/1000)
+                        double dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = 0;
+                        // (((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000))
+                        double dTotalOfBracketedCalculations = 0;
 
-                // MinMeleeDmg / DamageMultiplyer = OverallValue
-                dTotalOfBracketedCalculations = iMinMeleeDamage / iDamageMultiplier;
+                        // MinMeleeDmg / DamageMultiplyer = OverallValue
+                        dTotalOfBracketedCalculations = iMinMeleeDamage / iDamageMultiplier;
 
-                // BaseMeleeAtackTime / 1000 = RightMost
-                dBaseAttackTime_DIV_1000 = iBaseMeleeAttackTime / 1000;
+                        // BaseMeleeAtackTime / 1000 = RightMost
+                        dBaseAttackTime_DIV_1000 = iBaseMeleeAttackTime / 1000;
 
-                // BaseMeleeAttackPower / 14 = Middle
-                iBaseMeleeAttackPower_DIV_14 = iBaseMeleeAttackPower / 14;
+                        // BaseMeleeAttackPower / 14 = Middle
+                        iBaseMeleeAttackPower_DIV_14 = iBaseMeleeAttackPower / 14;
 
-                // OverallValue / Right = ((Middle + Left) = Average
-                dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = dTotalOfBracketedCalculations / dBaseAttackTime_DIV_1000;
+                        // OverallValue / Right = ((Middle + Left) = Average
+                        dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = dTotalOfBracketedCalculations / dBaseAttackTime_DIV_1000;
 
-                dBaseDamage_x_DamageVariance = dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 - iBaseMeleeAttackPower_DIV_14;
+                        dBaseDamage_x_DamageVariance = dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 - iBaseMeleeAttackPower_DIV_14;
 
-                dBaseDamage = dBaseDamage_x_DamageVariance / dDamageVariance;
-
-            }
-            reader.Close();
+                        dBaseDamage = dBaseDamage_x_DamageVariance / dDamageVariance;
+                        
+                    }
+                }
+            } // Here the connection will be closed and disposed.  (and the command also)
 
             return dBaseDamage;
         }
@@ -206,34 +202,31 @@ namespace TableDataGenerator
         // The function works out the base melee attack power
         //
         // I'm not sure of the accuracy of this one, even though it is taken straight from the creature_tamplate table
-        private int getBaseMeleeAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
+        private int getBaseMeleeAttackPower(UInt32 iClass, int iCreatureLevel, string myConnectionString)
         {
             // Generate base  melee attack power
-            MySqlDataReader reader;
             string sqlScript = "";
-            MySqlCommand cmd;
 
             // base  melee attack power     
             int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
 
             // Generate base damage
 
-            sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel AND MinLevelHealth = MaxLevelHealth LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
+            
+            using (MySqlConnection connect = new MySqlConnection(myConnectionString))
+            using (MySqlCommand cmd = new MySqlCommand(sqlScript, connect))
             {
-                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
-
-                iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
-                txtResults.Text += " Base Melee AP: " + iBaseMeleeAttackPower;
-            }
-
-            reader.Close();
-
+                connect.Open();
+                using (MySqlDataReader MySQLReader = cmd.ExecuteReader())
+                {
+                    while (MySQLReader.Read())
+                    {
+                        iBaseMeleeAttackPower = MySQLReader.GetInt32("MeleeAttackPower");
+                    }
+                }
+            } // Here the connection will be closed and disposed.  (and the command also)
+            
             return iBaseMeleeAttackPower;
         }
 
@@ -264,9 +257,6 @@ namespace TableDataGenerator
                 {
                     while (MySQLReader.Read())
                     {
-
-                        txtResults.Text += "" + iCreatureLevel + " " + MySQLReader.GetString("Entry") + " ";
-
                         iDamageMultiplier = MySQLReader.GetInt32("DamageMultiplier");
 
                         dDamageVariance = MySQLReader.GetDouble("DamageVariance");
@@ -280,11 +270,8 @@ namespace TableDataGenerator
                         // TBC has many set to 0
 
                         iMinRangedDamage = MySQLReader.GetInt32("MinRangedDmg");
-                        txtResults.Text += "\r\n iMinRangedDamage: " + iMinRangedDamage + " --- ";
                         iMaxRangedDamage = MySQLReader.GetInt32("MaxRangedDmg");
-                        txtResults.Text += "\r\n iMaxRangedDamage: " + iMaxRangedDamage + " --- ";
                         dAverageDamage = (iMinRangedDamage + iMaxRangedDamage) / 2;
-                        txtResults.Text += "\r\n dAverageDamage: " + dAverageDamage + " ---";
 
 
                         if (iDamageMultiplier == 0 || dDamageVariance == 0 || dAverageDamage == 0)
@@ -358,7 +345,7 @@ namespace TableDataGenerator
             string myConnectionString;
 
             myConnectionString = "server=127.0.0.1;uid=root;" +
-                "pwd=root;database=mangosone;";
+                "pwd=root;database=mangoszero;";
 
             // base health
             int iBaseHealth = 0;
@@ -378,21 +365,22 @@ namespace TableDataGenerator
                 
             // Class: Warrior (1)
             // ------------------
-            for (int iCreatureLevel = 61; iCreatureLevel <= 75; iCreatureLevel++)
+            for (int iCreatureLevel = 1; iCreatureLevel <= 63; iCreatureLevel++)
             {                
                 // Generate base health
- //               iBaseHealth = getBaseHealth(conn, MAGE_CLASS, iCreatureLevel);
-        //        txtResults.Text += " BASE DMG: " + iBaseHealth + "\r\n";
+                iBaseHealth = getBaseHealth(MAGE_CLASS, iCreatureLevel, myConnectionString);
+                txtResults.Text += "\r\n BASE HEALTH: " + iBaseHealth + "\r\n";
 
                 // Generate base mana - will be 0 for all records
                 iBaseMana = 0;
 
                 // Generate base damage
- //               dBaseDamage = getBaseDamage(conn, MAGE_CLASS, iCreatureLevel, iBaseMeleeAttackPower);
-  //              txtResults.Text += " BASE DMG: " + dBaseDamage + " --- ";
+                dBaseDamage = getBaseDamage(MAGE_CLASS, iCreatureLevel, iBaseMeleeAttackPower, myConnectionString);
+                txtResults.Text += " BASE DMG: " + dBaseDamage + " --- \r\n";
 
                 // Generate base melee attack power
- //               iBaseMeleeAttackPower = getBaseMeleeAttackPower(conn, MAGE_CLASS, iCreatureLevel);
+                iBaseMeleeAttackPower = getBaseMeleeAttackPower(MAGE_CLASS, iCreatureLevel, myConnectionString);
+                txtResults.Text += " BASE MELEE ATTACK POWER: " + iBaseMeleeAttackPower + " --- \r\n";
 
                 // Generate base ranged attack power
                 iBaseRangedAttackPower = getBaseRangedAttackPower(MAGE_CLASS, iCreatureLevel, myConnectionString);
