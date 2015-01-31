@@ -8,7 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using MySql.Data.MySqlClient; 
+using MySql.Data.MySqlClient;
+using System.Data.SqlClient;
 
 namespace TableDataGenerator
 {
@@ -128,7 +129,7 @@ namespace TableDataGenerator
 
         // ------====== BASE DAMAGE ======------
         // The method works out the base damage
-        private double getBaseDamage(MySqlConnection conn, UInt32 iClass, int iCreatureLevel, int iDamageMultiplier, double dDamageVariance, int iBaseMeleeAttackPower)
+        private double getBaseDamage(MySqlConnection conn, UInt32 iClass, int iCreatureLevel, int iBaseMeleeAttackPower)
         {
             MySqlDataReader reader;
             string sqlScript = "";
@@ -138,6 +139,8 @@ namespace TableDataGenerator
             int iBaseMeleeAttackTime = 0; // MeleeBaseAttackTime in creature_tempplate table
             int iMinMeleeDamage = 0;
             int iMaxMeleeDamage = 0;
+            int iDamageMultiplier = 0;
+            double dDamageVariance = 0;
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
 
@@ -237,87 +240,113 @@ namespace TableDataGenerator
 
         // ------====== BASE RANGED ATTACK POWER ======------
         // The method works out the base ranged attack power
-        private int getBaseRangedAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel, int iDamageMultiplier, double dDamageVariance, double dBaseDamage)
+        private int getBaseRangedAttackPower(UInt32 iClass, int iCreatureLevel, string myConnectionString)
         {
-            MySqlDataReader reader;
             string sqlScript = "";
-            MySqlCommand cmd;
 
             int iBaseRangedAttackPower = 0; // this is what we need to worl out
             int iBaseRangedAttackTime = 0; // MeleeBaseAttackTime in creature_tempplate table
             int iMinRangedDamage = 0;
             int iMaxRangedDamage = 0;
+            double dAverageDamage = 0;
+            int iDamageMultiplier = 0;
+            double dDamageVariance = 0;
+
+            double dBaseDamage = 0;
+
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
-
-            cmd = new MySqlCommand(sqlScript, conn);
-
-            reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connect = new MySqlConnection(myConnectionString))
+            using (MySqlCommand cmd = new MySqlCommand(sqlScript, connect))
             {
-  //              txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
+                connect.Open();
+                using (MySqlDataReader MySQLReader = cmd.ExecuteReader())
+                {
+                    while (MySQLReader.Read())
+                    {
 
-                iDamageMultiplier = reader.GetInt32("DamageMultiplier");
+                        txtResults.Text += "" + iCreatureLevel + " " + MySQLReader.GetString("Entry") + " ";
 
-                dDamageVariance = reader.GetDouble("DamageVariance");
+                        iDamageMultiplier = MySQLReader.GetInt32("DamageMultiplier");
 
-                iBaseRangedAttackPower = reader.GetInt32("RangedAttackPower");
+                        dDamageVariance = MySQLReader.GetDouble("DamageVariance");
 
-                iBaseRangedAttackTime = reader.GetInt32("RangedBaseAttackTime");
+                        //       iBaseRangedAttackPower = reader.GetInt32("RangedAttackPower");   // this cannot be what we want!  only values of 0 and 100
 
-                iMinRangedDamage = reader.GetInt32("MinRangedDmg");
-                txtResults.Text += "\r\n iMinRangedDamage: " + iMinRangedDamage + " --- \r\n";
-                iMaxRangedDamage = reader.GetInt32("MaxRangedDmg");
-                txtResults.Text += "\r\n iMaxRangedDamage: " + iMaxRangedDamage + " --- \r\n";
+                        iBaseRangedAttackTime = MySQLReader.GetInt32("RangedBaseAttackTime");
+                        if (iBaseRangedAttackTime == 0)
+                            iBaseRangedAttackTime = 1000;   // should we really have to do this ????
+                        // Vanilla has all BaseRangedAttackTime > 0, but
+                        // TBC has many set to 0
 
-
-                // REVERSE THE CALCULATION in order to acquire the base damage
-                // CalculatedMinRangedDmg=ROUND(((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))*(Base Ranged Attack Time/1000)) * Damage Multiplier
-
-                // (Base Damage * Damage Variance)
-                double dBaseDamage_x_DamageVariance = 0;
-                // (Base Attack Time/1000)
-                double dBaseRangedAtackTime_DIV_1000 = 0;
-                //  (((BaseDamage * Damage Variance) + (Base Ranged Attackpower / 14)) * (Base Ranged Attack Time/1000))
-                double dTotalOfBracketedCalculations = 0;
-
-                // (Base Ranged Attackpower / 14)
-                double iBaseRangedAttackPower_DIV_14 = 0;
-
-                // ((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) / (Base Attack Time/1000)
-                double dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = 0;
+                        iMinRangedDamage = MySQLReader.GetInt32("MinRangedDmg");
+                        txtResults.Text += "\r\n iMinRangedDamage: " + iMinRangedDamage + " --- ";
+                        iMaxRangedDamage = MySQLReader.GetInt32("MaxRangedDmg");
+                        txtResults.Text += "\r\n iMaxRangedDamage: " + iMaxRangedDamage + " --- ";
+                        dAverageDamage = (iMinRangedDamage + iMaxRangedDamage) / 2;
+                        txtResults.Text += "\r\n dAverageDamage: " + dAverageDamage + " ---";
 
 
+                        if (iDamageMultiplier == 0 || dDamageVariance == 0 || dAverageDamage == 0)
+                        {
+                            txtResults.Text += "\r\n A REQUIRED VALUE WAS 0!!! \r\n";
+                            return 0; // calculation cannot be performed
+                        }
 
 
-                // MinRangedDamage / DamageMultiplyer = OverallValue of bracketed calculations
-                dTotalOfBracketedCalculations = iMinRangedDamage / iDamageMultiplier;
-                txtResults.Text += "\r\n dTotalOfBracketedCalculations: " + dTotalOfBracketedCalculations + " --- \r\n";
+                        // REVERSE THE CALCULATION in order to acquire the ranged attack power
 
-                // BaseRangedAttackTime / 1000 = RightMost
-                dBaseRangedAtackTime_DIV_1000 = iBaseRangedAttackTime / 1000;
-                txtResults.Text += "\r\n dBaseRangedAtackTime_DIV_1000: " + dBaseRangedAtackTime_DIV_1000 + " --- \r\n";
+                        // EQUATION
+                        // CalculatedMinRangedDmg=ROUND(((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))*(Base Ranged Attack Time/1000)) * Damage Multiplier
+
+                        // Left hand side expression (of the equation)
+                        // (((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))*(Base Ranged Attack Time/1000)) * Damage Multiplier
+
+                        // (((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))*(Base Ranged Attack Time/1000))
+                        double dTotal = 0;
+
+                        // Expression 1
+                        // (Base Ranged Attack Time/1000)
+                        double dExpression1 = 0;
+
+                        // Expression 2
+                        // (BaseDamage * Damage Variance)
+                        double dExpression2 = 0;
+
+                        // Expression 3
+                        // (BaseRangedAttackPower/14)
+                        double dExpression3 = 0;   // uncomment this if using a ratio other than 50:50
+
+                        // Expression 4
+                        // ((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))
+                        double dExpression4 = 0;
 
 
+                        // (((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))*(Base Ranged Attack Time/1000))
+                        dTotal = dAverageDamage / iDamageMultiplier;
 
-                // OverallValue / Right = ((Middle + Left) = Average
-                dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 = dTotalOfBracketedCalculations / dBaseRangedAtackTime_DIV_1000;
-                txtResults.Text += "\r\n dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000: " + dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 + " --- \r\n\r\n";
+                        // (Base Ranged Attack Time/1000)
+                        dExpression1 = iBaseRangedAttackTime / 1000;
 
+                        // ((BaseDamage * Damage Variance)+(BaseRangedAttackPower/14))
+                        dExpression4 = dTotal / dExpression1;
 
-                // BaseDamageExp? * Creature_Template.DamageVariance
-                dBaseDamage_x_DamageVariance = dBaseDamage * dDamageVariance;
-                txtResults.Text += "\r\n dBaseDamage_x_DamageVariance: " + dBaseDamage_x_DamageVariance + " --- \r\n";
+                        // Next we split the result held in dExpression4 in two ( div by 2), that we we can acquire the unknown values
+                        // It may be that another ratio be used instead of 50:50, such as 70:30 or 20:80. 
+                        dExpression2 = dExpression4 / 2;
+                        // with a ratio of 50:50 used, we only need to use dExpression1, but
+                        // with any other ratio we would then also use dExpression2 e.g.
+                        // dExpression2 = dExpression4 / 4;        // 25% of total value
+                        // dExpression3 = dExpression4 / 4 * 3;    // 75% of total value
 
-                iBaseRangedAttackPower_DIV_14 = dTotalOfBracketedCalculations_DIV_BaseAttackTimeDIV1000 - dBaseDamage_x_DamageVariance;
-                txtResults.Text += "r\n iBaseRangedAttackPower_DIV_14: " + iBaseRangedAttackPower_DIV_14 + " --- \r\n";
+                        dBaseDamage = dExpression2 / 0.34;
 
-                iBaseRangedAttackPower = (int)iBaseRangedAttackPower_DIV_14 * 14;
+                        iBaseRangedAttackPower = (int)(dExpression2 * 14);
 
-            }
-            reader.Close();
-
+                    }
+                }
+            } // Here the connection will be closed and disposed.  (and the command also)
+            
             return iBaseRangedAttackPower;
         }
 
@@ -326,24 +355,10 @@ namespace TableDataGenerator
         private void btnGenerateScript_Click(object sender, EventArgs e)
         {
             // connect to the database
-            MySqlConnection conn;
             string myConnectionString;
 
             myConnectionString = "server=127.0.0.1;uid=root;" +
                 "pwd=root;database=mangosone;";
-
-            conn = new MySql.Data.MySqlClient.MySqlConnection(myConnectionString);
-            try
-            {
-                conn.Open();
-                lblConnectionState.Text = "Connected";
-            }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
-            {
-                MessageBox.Show(ex.Message);
-                lblConnectionState.Text = "Failed to Connect";
-            }
-            // read in data
 
             // base health
             int iBaseHealth = 0;
@@ -352,8 +367,6 @@ namespace TableDataGenerator
             int iBaseMana = 0;
 
             double dBaseDamage = 0;
-            int iDamageMultiplier = 0; // DamageMultiplyer in creature_tempplate table
-            double dDamageVariance = 0; // DamageVariance in creature_tempplate table
 
             int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
 
@@ -365,25 +378,25 @@ namespace TableDataGenerator
                 
             // Class: Warrior (1)
             // ------------------
-            for (int iCreatureLevel = 1; iCreatureLevel <= 60; iCreatureLevel++)
+            for (int iCreatureLevel = 61; iCreatureLevel <= 75; iCreatureLevel++)
             {                
                 // Generate base health
-                iBaseHealth = getBaseHealth(conn, MAGE_CLASS, iCreatureLevel);
+ //               iBaseHealth = getBaseHealth(conn, MAGE_CLASS, iCreatureLevel);
         //        txtResults.Text += " BASE DMG: " + iBaseHealth + "\r\n";
 
                 // Generate base mana - will be 0 for all records
                 iBaseMana = 0;
 
                 // Generate base damage
-                dBaseDamage = getBaseDamage(conn, MAGE_CLASS, iCreatureLevel, iDamageMultiplier, dDamageVariance, iBaseMeleeAttackPower);
-                txtResults.Text += " BASE DMG: " + dBaseDamage + " --- ";
+ //               dBaseDamage = getBaseDamage(conn, MAGE_CLASS, iCreatureLevel, iBaseMeleeAttackPower);
+  //              txtResults.Text += " BASE DMG: " + dBaseDamage + " --- ";
 
                 // Generate base melee attack power
-                iBaseMeleeAttackPower = getBaseMeleeAttackPower(conn, MAGE_CLASS, iCreatureLevel);
+ //               iBaseMeleeAttackPower = getBaseMeleeAttackPower(conn, MAGE_CLASS, iCreatureLevel);
 
                 // Generate base ranged attack power
-                iBaseRangedAttackPower = getBaseRangedAttackPower(conn, MAGE_CLASS, iCreatureLevel, iDamageMultiplier, dDamageVariance, dBaseDamage);
-                txtResults.Text += " BASE RANGED ATTACK POWER: " + iBaseRangedAttackPower + "\r\n";
+                iBaseRangedAttackPower = getBaseRangedAttackPower(MAGE_CLASS, iCreatureLevel, myConnectionString);
+                txtResults.Text += "\r\n BASE RANGED ATTACK POWER: " + iBaseRangedAttackPower + "\r\n";
 
                 // Generate base armour 
                 // ?????? no info on how to do this!!!
