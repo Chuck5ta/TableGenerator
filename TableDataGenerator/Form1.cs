@@ -285,6 +285,41 @@ namespace TableDataGenerator
             return iBaseRangedAttackPower;
         }
 
+        // ------====== Base Melee Attack Power ======------
+        // The function works out the base melee attack power
+        //
+        // I'm not sure of the accuracy of this one, even though it is taken straight from the creature_tamplate table
+        private int getBaseMeleeAttackPower(MySqlConnection conn, UInt32 iClass, int iCreatureLevel)
+        {
+            // Generate base  melee attack power
+            MySqlDataReader reader;
+            string sqlScript = "";
+            MySqlCommand cmd;
+
+            // base  melee attack power     
+            int iBaseMeleeAttackPower = 0; // used for itself (BaseMeleeAttackPower) and for calculating BaseDamge
+
+            // Generate base damage
+
+            sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel AND MinLevelHealth = MaxLevelHealth LIMIT 1 ";
+
+            cmd = new MySqlCommand(sqlScript, conn);
+
+            reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                txtResults.Text += "" + iCreatureLevel + " " + reader.GetString("Entry") + " ";
+
+                iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
+                txtResults.Text += " Base Melee AP: " + iBaseMeleeAttackPower;
+            }
+
+            reader.Close();
+
+            return iBaseMeleeAttackPower;
+        }
+
 
 
         private void btnGenerateScript_Click(object sender, EventArgs e)
@@ -349,54 +384,17 @@ namespace TableDataGenerator
                 dBaseDamage = getBaseDamage(conn, MAGE_CLASS, iCreatureLevel, iDamageMultiplier, dDamageVariance, iBaseMeleeAttackPower);
                 txtResults.Text += " BASE DMG: " + dBaseDamage + " --- ";
 
+                // Generate base melee attack power
+                iBaseMeleeAttackPower = getBaseMeleeAttackPower(conn, MAGE_CLASS, iCreatureLevel);
 
                 // Generate base ranged attack power
                 iBaseRangedAttackPower = getBaseRangedAttackPower(conn, MAGE_CLASS, iCreatureLevel, iDamageMultiplier, dDamageVariance, dBaseDamage);
                 txtResults.Text += " BASE RANGED ATTACK POWER: " + iBaseRangedAttackPower + "\r\n";
 
-            }
-
-
-            /*
-            // Class: Warrior (1)
-            // ---- BASE MELEE ATTACK POWER ------
-            // simples
-            for (int i = 1; i <= 60; i++)
-            {
-                // Generate base damage
-
-                sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = 1 AND MinLevel = " + i.ToString() + " AND MinLevel = MaxLevel AND MinLevelHealth = MaxLevelHealth LIMIT 1 ";
-
-                cmd = new MySqlCommand(sqlScript, conn);
-
-                reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    txtResults.Text += "" + i + " " + reader.GetString("Entry") + " ";
-
-                    iBaseMeleeAttackPower = reader.GetInt32("MeleeAttackPower");
-                    txtResults.Text += " Base Melee AP: " + iBaseMeleeAttackPower;
-                }
+                // Generate base armour 
+                // ?????? no info on how to do this!!!
 
             }
-             * */
-
-
-
-
-
-
-                    // Generate base damage
-
-                    // Generate base melee attack power
-
-                    // Generate base ranged attack power
-
-                    // Generate base armour
-
-
-            // Generate base mana
 
 
 
