@@ -19,7 +19,6 @@ namespace TableDataGenerator
         const UInt32 PALADIN_CLASS = 2;
         const UInt32 MAGE_CLASS = 8;
 
-
         public Form1()
         {
             InitializeComponent();
@@ -46,7 +45,6 @@ namespace TableDataGenerator
                 MessageBox.Show(ex.Message);
                 lblConnectionState.Text = "Failed to Connect";
             }
-
 
             // set text to show successfull connection
 
@@ -162,7 +160,6 @@ namespace TableDataGenerator
                         // REVERSE THE CALCULATION in order to acquire the base damage
                         // CalculatedMinMeleeDmg=ROUND(((BaseDamage * Damage Variance) + (Base Melee Attackpower / 14)) * (Base Attack Time/1000)) * Damage Multiplier
 
-
                         // (Base Damage * Damage Variance)
                         double dBaseDamage_x_DamageVariance = 0;
                         // (Base Attack Time/1000)
@@ -244,9 +241,7 @@ namespace TableDataGenerator
             double dAverageDamage = 0;
             int iDamageMultiplier = 0;
             double dDamageVariance = 0;
-
             double dBaseDamage = 0;
-
 
             sqlScript = " SELECT * FROM creature_template WHERE Rank = 0 AND UnitClass = " + iClass + " AND MinLevel = " + iCreatureLevel + " AND MinLevel = MaxLevel LIMIT 1 ";
             using (MySqlConnection connect = new MySqlConnection(myConnectionString))
@@ -273,13 +268,11 @@ namespace TableDataGenerator
                         iMaxRangedDamage = MySQLReader.GetInt32("MaxRangedDmg");
                         dAverageDamage = (iMinRangedDamage + iMaxRangedDamage) / 2;
 
-
                         if (iDamageMultiplier == 0 || dDamageVariance == 0 || dAverageDamage == 0)
                         {
                             txtResults.Text += "\r\n A REQUIRED VALUE WAS 0!!! \r\n";
                             return 0; // calculation cannot be performed
                         }
-
 
                         // REVERSE THE CALCULATION in order to acquire the ranged attack power
 
